@@ -8,7 +8,7 @@ table {
   }
 }
 
-textarea {
+::ng-deep textarea {
   min-width: 450px;
 
   &.forceImportant {

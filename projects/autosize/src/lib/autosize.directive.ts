@@ -48,13 +48,12 @@ export class AutosizeDirective implements OnDestroy, OnChanges, AfterContentChec
         private _window: WindowRef,
         private _zone: NgZone
     ) {
+        this._assetsRaceFix();
         if (this.element.nativeElement.tagName !== 'TEXTAREA') {
             this._findNestedTextArea();
 
         } else {
-            this.textAreaEl = this.element.nativeElement;
-            this.textAreaEl.style.overflow = 'hidden';
-            this._onTextAreaFound();
+            this._onTextAreaFound(this.element.nativeElement);
         }
     }
 
@@ -74,13 +73,13 @@ export class AutosizeDirective implements OnDestroy, OnChanges, AfterContentChec
     }
 
     _findNestedTextArea() {
-        this.textAreaEl = this.element.nativeElement.querySelector('TEXTAREA');
+        let textAreaEl = this.element.nativeElement.querySelector('TEXTAREA');
 
-        if (!this.textAreaEl && this.element.nativeElement.shadowRoot) {
-            this.textAreaEl = this.element.nativeElement.shadowRoot.querySelector('TEXTAREA');
+        if (!textAreaEl && this.element.nativeElement.shadowRoot) {
+            textAreaEl = this.element.nativeElement.shadowRoot.querySelector('TEXTAREA');
         }
 
-        if (!this.textAreaEl) {
+        if (!textAreaEl) {
             if (this.retries >= MAX_LOOKUP_RETRIES) {
                 console.warn('ngx-autosize: textarea not found');
 
@@ -93,14 +92,16 @@ export class AutosizeDirective implements OnDestroy, OnChanges, AfterContentChec
             return;
         }
 
-        this.textAreaEl.style.overflow = 'hidden';
-        this._onTextAreaFound();
+        this._onTextAreaFound(textAreaEl);
 
     }
 
-    _onTextAreaFound() {
+    _onTextAreaFound(textAreaEl: HTMLElement) {
         this._addWindowResizeHandler();
         setTimeout(() => {
+            textAreaEl.style.overflow = 'hidden';
+            this.textAreaEl = textAreaEl;
+
             this.adjust();
         });
     }
@@ -117,13 +118,21 @@ export class AutosizeDirective implements OnDestroy, OnChanges, AfterContentChec
         });
     }
 
-    adjust(inputsChanged = false): void {
-        if (!this._destroyed && this.textAreaEl && this.textAreaEl.parentNode) {
+    private _assetsRaceFix() {
+        const onDocumentReady = () => {
+            this.adjust(true);
+            this._window.nativeWindow.document.removeEventListener('readystatechange', onDocumentReady, false);
 
+        };
+        this._window.nativeWindow.document.addEventListener('readystatechange', onDocumentReady, false);
+    }
+
+    public adjust(force = false) {
+        if (!this._destroyed && this.textAreaEl && this.textAreaEl.parentNode) {
             const currentText = this.textAreaEl.value;
 
             if (
-                inputsChanged === false &&
+                !force &&
                 currentText === this._oldContent &&
                 this.textAreaEl.offsetWidth === this._oldWidth
             ) {
@@ -184,19 +193,33 @@ export class AutosizeDirective implements OnDestroy, OnChanges, AfterContentChec
         }
     }
 
-    private _getLineHeight() {
+    private _getLineHeight(): number {
+        let lineHeight = this._tryReadingLineHeight();
+
+        if (isNaN(lineHeight)) {
+            lineHeight = this._tryReadingLineHeight();
+
+            if (isNaN(lineHeight)) {
+                lineHeight = this._guessLineHeight();
+            }
+        }
+
+        return lineHeight
+    }
+
+    private _tryReadingLineHeight() {
         let lineHeight = parseInt(this.textAreaEl.style.lineHeight, 10);
         if (isNaN(lineHeight) && this._window.nativeWindow.getComputedStyle) {
             const styles = this._window.nativeWindow.getComputedStyle(this.textAreaEl);
             lineHeight = parseInt(styles.lineHeight, 10);
         }
 
-        if (isNaN(lineHeight)) {
-            const fontSize = this._window.nativeWindow.getComputedStyle(this.textAreaEl, null).getPropertyValue('font-size');
-            lineHeight = Math.floor(parseInt(fontSize.replace('px', ''), 10) * 1.5);
-        }
-
         return lineHeight;
+    }
+
+    private _guessLineHeight() {
+        const fontSize = this._window.nativeWindow.getComputedStyle(this.textAreaEl, null).getPropertyValue('font-size');
+        return Math.floor(parseInt(fontSize.replace('px', ''), 10) * 1.5);
     }
 }
 

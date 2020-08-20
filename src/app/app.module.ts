@@ -5,10 +5,14 @@ import {AppComponent} from './app.component';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {AutosizeModule} from 'ngx-autosize';
 // import {AutosizeModule} from '../../projects/autosize/src/lib/autosize.module';
+import { OnPushContainerComponent } from './on-push-container/on-push-container.component';
+import { OnPushTextareaComponent } from './on-push-container/on-push-textarea/on-push-textarea.component';
 
 @NgModule({
     declarations: [
-        AppComponent
+        AppComponent,
+        OnPushContainerComponent,
+        OnPushTextareaComponent
     ],
     imports: [
         BrowserModule,

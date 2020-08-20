@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {ChangeDetectionStrategy, Component, OnInit} from '@angular/core';
 import {FormControl, FormGroup} from "@angular/forms";
 
 const longText = `Mega Man X, known in Japan as Rockman X,[a] is an action-platform video game developed and published by Capcom for the Super Nintendo Entertainment System (SNES).
@@ -17,7 +17,9 @@ Text area should come back to its original form :)
 @Component({
     selector: 'app-root',
     templateUrl: './app.component.html',
-    styleUrls: ['./app.component.scss']
+    styleUrls: ['./app.component.scss'],
+
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AppComponent implements OnInit {
     public longText = longText;
